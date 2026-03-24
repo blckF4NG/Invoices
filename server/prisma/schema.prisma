@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+}
+
+model Company {
+  id                 Int       @id @default(autoincrement())
+  name               String
+  address            String
+  stateCode          String
+  gstin              String
+  pan                String?
+  signatoryName      String
+  signatureImagePath String?
+  logoImagePath      String?
+  bankName           String
+  bankAccount        String
+  ifscCode           String
+  invoices           Invoice[]
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}
+
+model SavedParty {
+  id                 Int       @id @default(autoincrement())
+  partyName          String    @unique
+  address            String
+  stateCode          String
+  gstin              String
+  lastUsedAt         DateTime  @default(now())
+  consigneeInvoices  Invoice[] @relation("ConsigneeInvoices")
+  buyerInvoices      Invoice[] @relation("BuyerInvoices")
+}
+
+model SavedFieldValue {
+  id         Int      @id @default(autoincrement())
+  fieldName  String
+  value      String
+  lastUsedAt DateTime @default(now())
+
+  @@unique([fieldName, value])
+}
+
+model SavedItem {
+  id             Int      @id @default(autoincrement())
+  description    String   @unique
+  hsnCode        String
+  defaultGstRate Float
+  defaultRate    Float
+  defaultUnit    String
+  lastUsedAt     DateTime @default(now())
+}
+
+model Invoice {
+  id             Int         @id @default(autoincrement())
+  companyId      Int
+  company        Company     @relation(fields: [companyId], references: [id])
+  invoiceNumber  String
+  invoiceDate    DateTime
+  consigneeId    Int?
+  consignee      SavedParty? @relation("ConsigneeInvoices", fields: [consigneeId], references: [id])
+  buyerId        Int?
+  buyer          SavedParty? @relation("BuyerInvoices", fields: [buyerId], references: [id])
+  lineItemsJSON  String      // Storing line items as stringified JSON array
+  taxType        String      // "IGST" or "CGST_SGST"
+  subtotal       Float
+  taxAmount      Float
+  total          Float
+  status         String      @default("draft") // "draft" or "final"
+  
+  // Header editable fields that might not strictly tie to relation
+  deliveryNote         String?
+  eWayBillNo           String?
+  dispatchFrom         String?
+  dispatchedThrough    String?
+  destination          String?
+  termsOfDelivery      String?
+  buyersOrderNo        String?
+  orderDated           DateTime?
+
+  createdAt      DateTime    @default(now())
+}
