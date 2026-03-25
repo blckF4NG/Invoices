@@ -5,7 +5,6 @@ builder = "nixpacks"
 startCommand = "npm start"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 100
-restartPolicyType = "on-failure"
 
 [nixpacks]
 plan = { providers = ["node"], packages = ["chromium"] }
