@@ -7,7 +7,7 @@
     "server"
   ],
   "scripts": {
-    "build": "npm run build -w client && npm install -w server",
+    "build": "npm run build -w client && npm install -w server && cd server && npx prisma generate",
     "start": "cd server && npx prisma migrate deploy && node index.js"
   },
   "engines": {
