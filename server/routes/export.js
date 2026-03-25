@@ -101,7 +101,7 @@ router.post('/pdf', async (req, res) => {
     const browser = await puppeteer.launch({ 
       headless: 'new',
       args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
-      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || (process.env.NODE_ENV === 'production' ? '/usr/bin/chromium' : null),
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || (process.env.NODE_ENV === 'production' ? '/nix/var/nix/profiles/default/bin/chromium' : null),
       timeout: 30000 // 30s launch timeout
     });
     const page = await browser.newPage();
