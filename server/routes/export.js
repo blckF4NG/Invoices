@@ -59,6 +59,12 @@ router.post('/pdf', async (req, res) => {
   try {
     const { htmlContent, companyName, invoiceNo, invoiceDate, companyData } = req.body;
     
+    if (!htmlContent) {
+      return res.status(400).json({ error: 'Missing HTML content' });
+    }
+
+    console.log(`Starting PDF generation for: ${companyName} - ${invoiceNo}`);
+    
     // Process logo and signature to Base64
     const logoBase64 = companyData ? getBase64Image(companyData.logoImagePath) : null;
     const signatureBase64 = companyData ? getBase64Image(companyData.signatureImagePath) : null;
@@ -95,10 +101,13 @@ router.post('/pdf', async (req, res) => {
     const browser = await puppeteer.launch({ 
       headless: 'new',
       args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
-      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || null
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || null,
+      timeout: 30000 // 30s launch timeout
     });
     const page = await browser.newPage();
-    await page.setContent(fullHtml, { waitUntil: 'networkidle0' });
+    
+    // 30s timeout for setting content
+    await page.setContent(fullHtml, { waitUntil: 'networkidle0', timeout: 30000 });
     
     const shortName = companyName.replace(/[^a-zA-Z0-9]/g, '').substring(0, 10);
     const dateStr = new Date(invoiceDate).toISOString().split('T')[0];
@@ -107,7 +116,8 @@ router.post('/pdf', async (req, res) => {
     const pdfBuffer = await page.pdf({
       format: 'A4',
       margin: { top: '15mm', right: '15mm', bottom: '15mm', left: '15mm' },
-      printBackground: true
+      printBackground: true,
+      timeout: 30000 // 30s pdf timeout
     });
 
     await browser.close();

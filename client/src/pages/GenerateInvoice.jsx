@@ -128,7 +128,8 @@ export default function GenerateInvoice() {
       link.click();
       link.remove();
     } catch (err) {
-      console.error(err);
+      console.error('PDF Export Error:', err);
+      toast.error('Failed to generate PDF. Check console for details.');
     } finally {
       setPdfLoading(false);
     }

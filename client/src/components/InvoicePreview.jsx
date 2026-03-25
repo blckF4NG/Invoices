@@ -39,7 +39,7 @@ export default function InvoicePreview({
         <div className="bg-white p-4 sm:p-8 md:p-12 text-black text-xs font-sans border-b-4 border-gray-800 overflow-x-auto" id="invoice-print-area">
           {companyData.logoImagePath && (
             <div className="mb-6 flex justify-start">
-              <img src={`http://${window.location.hostname}:3001${companyData.logoImagePath}`} alt="Logo" className="h-20 object-contain" />
+              <img src={companyData.logoImagePath} alt="Logo" className="h-20 object-contain" />
             </div>
           )}
           <table className="w-full border-collapse border border-black mb-4">
@@ -291,7 +291,7 @@ export default function InvoicePreview({
             <div className="w-1/2 flex flex-col items-end pt-2 text-right">
               <div className="font-bold mb-8 text-sm">For {companyData.name}</div>
               {companyData.signatureImagePath && (
-                <img src={`http://${window.location.hostname}:3001${companyData.signatureImagePath}`} alt="Signature" className="h-12 mb-2 object-contain" />
+                <img src={companyData.signatureImagePath} alt="Signature" className="h-12 mb-2 object-contain" />
               )}
               <div className="mt-4">Authorised Signatory</div>
             </div>
