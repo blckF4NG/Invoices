@@ -3,7 +3,7 @@ const { requireAuth } = require('../middleware/authMiddleware');
 const puppeteer = require('puppeteer');
 const fs = require('fs');
 const path = require('path');
-const { Document, Packer, Paragraph, Table, TableRow, TableCell, TextRun, WidthType, BorderStyle, ImageRun } = require('docx');
+const { Document, Packer, Paragraph, Table, TableRow, TableCell, TextRun, WidthType, BorderStyle, ImageRun, AlignmentType } = require('docx');
 
 const router = express.Router();
 
@@ -37,19 +37,37 @@ function numToWords(number) {
 // Convert image to base64
 function getBase64Image(urlPath) {
   if (!urlPath) return null;
-  // local path
-  const fullPath = path.join(__dirname, '..', urlPath);
-  if (!fs.existsSync(fullPath)) return null;
-  const ext = path.extname(fullPath).substring(1);
+  
+  // Use same upload directory logic as index.js
+  const uploadDir = process.env.UPLOAD_DIR || path.join(__dirname, '..', 'uploads');
+  
+  // If the path starts with /uploads/, strip it to find the filename
+  const fileName = urlPath.startsWith('/uploads/') ? urlPath.replace('/uploads/', '') : path.basename(urlPath);
+  const fullPath = path.join(uploadDir, fileName);
+
+  if (!fs.existsSync(fullPath)) {
+    console.error(`File NOT found: ${fullPath}`);
+    return null;
+  }
+  
+  const ext = path.extname(fullPath).substring(1) || 'png';
   const data = fs.readFileSync(fullPath).toString('base64');
   return `data:image/${ext};base64,${data}`;
 }
 
 router.post('/pdf', async (req, res) => {
   try {
-    const { htmlContent, companyName, invoiceNo, invoiceDate } = req.body;
+    const { htmlContent, companyName, invoiceNo, invoiceDate, companyData } = req.body;
     
-    // We expect the frontend to send the processed HTML snippet
+    // Process logo and signature to Base64
+    const logoBase64 = companyData ? getBase64Image(companyData.logoImagePath) : null;
+    const signatureBase64 = companyData ? getBase64Image(companyData.signatureImagePath) : null;
+
+    // Remove any existing logo/signature images from the HTML content if they point to /uploads/
+    // as they will be broken or redundant in the PDF.
+    const processedHtml = htmlContent.replace(/<img[^>]*src="[^"]*\/uploads\/[^"]*"[^>]*>/g, '');
+
+    // Inject styles and logo if needed
     const fullHtml = `
       <!DOCTYPE html>
       <html>
@@ -61,10 +79,15 @@ router.post('/pdf', async (req, res) => {
           table { width: 100%; border-collapse: collapse; }
           td, th { border: 1px solid black; padding: 4px; font-size: 11px; }
           .no-border { border: none !important; }
+          img { max-width: 100%; height: auto; }
         </style>
       </head>
       <body class="p-8">
-        ${htmlContent}
+        <div id="invoice-logo-container">
+          ${logoBase64 ? `<img src="${logoBase64}" class="h-20 mb-6 object-contain" />` : ''}
+        </div>
+        ${processedHtml}
+        ${signatureBase64 ? `<div class="flex justify-end mt-4"><img src="${signatureBase64}" class="h-12 object-contain" /></div>` : ''}
       </body>
       </html>
     `;
@@ -108,7 +131,31 @@ router.post('/word', async (req, res) => {
 
     const tableRows = [];
 
-    // Header Info
+    // Logo Row
+    const logoBase64 = getBase64Image(companyData.logoImagePath);
+    if (logoBase64) {
+      const logoBuffer = Buffer.from(logoBase64.split(',')[1], 'base64');
+      tableRows.push(new TableRow({
+        children: [
+          new TableCell({
+            children: [
+              new Paragraph({
+                children: [
+                   new ImageRun({
+                    data: logoBuffer,
+                    transformation: { width: 150, height: 60 }
+                  })
+                ]
+              })
+            ],
+            columnSpan: 7,
+            borders: { bottom: { style: BorderStyle.NONE } }
+          })
+        ]
+      }));
+    }
+
+    // Company Header Info
     tableRows.push(new TableRow({
       children: [
         new TableCell({
@@ -165,11 +212,55 @@ router.post('/word', async (req, res) => {
       }));
     });
 
-    // Totals
+    // Footer / Totals
     tableRows.push(new TableRow({
       children: [
         new TableCell({ children: [new Paragraph({ text: "Total", bold: true })], columnSpan: 6 }),
-        new TableCell({ children: [new Paragraph({ text: total.toString(), bold: true })] }),
+        new TableCell({ children: [new Paragraph({ text: total.toFixed(0), bold: true })] }),
+      ]
+    }));
+
+    // Amount in Words
+    tableRows.push(new TableRow({
+      children: [
+        new TableCell({
+          children: [
+            new Paragraph({ text: "Amount in Words:", size: 16, italic: true }),
+            new Paragraph({ text: numToWords(total), bold: true })
+          ],
+          columnSpan: 7
+        })
+      ]
+    }));
+
+    // Bank & Signature
+    const signatureBase64 = getBase64Image(companyData.signatureImagePath);
+    const signatureChildren = [];
+    if (signatureBase64) {
+      const sigBuffer = Buffer.from(signatureBase64.split(',')[1], 'base64');
+      signatureChildren.push(new ImageRun({
+        data: sigBuffer,
+        transformation: { width: 100, height: 40 }
+      }));
+    }
+
+    tableRows.push(new TableRow({
+      children: [
+        new TableCell({
+          children: [
+            new Paragraph({ text: `Bank: ${companyData.bankName} | A/c: ${companyData.bankAccount} | IFSC: ${companyData.ifscCode}` }),
+            new Paragraph({ text: "Declaration: We declare that this invoice shows the actual price of goods described..." })
+          ],
+          columnSpan: 4
+        }),
+        new TableCell({
+          children: [
+            new Paragraph({ text: `For ${companyData.name}`, bold: true, alignment: AlignmentType.RIGHT }),
+            new Paragraph({ children: signatureChildren, alignment: AlignmentType.RIGHT }),
+            new Paragraph({ text: "Authorised Signatory", bold: true, alignment: AlignmentType.RIGHT })
+          ],
+          columnSpan: 3
+        })
       ]
     }));
 

@@ -113,7 +113,8 @@ export default function GenerateInvoice() {
         htmlContent: el.innerHTML,
         companyName: currentCompanyObj.name,
         invoiceNo: header.invoiceNo || 'Draft',
-        invoiceDate: header.invoiceDate
+        invoiceDate: header.invoiceDate,
+        companyData: currentCompanyObj
       }, { 
         responseType: 'blob'
       });
