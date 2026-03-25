@@ -34,6 +34,7 @@ app.use(cookieParser());
 
 // Serve uploaded files (logos, signatures)
 app.use('/uploads', express.static(uploadDir));
+app.use('/assets', express.static(uploadDir)); // Also serve from assets for seed data compatibility
 
 // API Routes
 app.use('/api/auth', authRoutes);

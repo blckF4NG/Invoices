@@ -18,57 +18,78 @@ async function main() {
 
   console.log('Admin user created/updated.', adminJ);
 
-  const ssdAviation = await prisma.company.create({
-    data: {
+  const ssdAviation = await prisma.company.upsert({
+    where: { id: 1 },
+    update: { logoImagePath: '/assets/ssd_logo.png' },
+    create: {
       name: 'SSD Aviation Techno Pvt. Ltd.',
       address: 'Plot No 49, Kami Road, Asadpur Nandnaur, Kami-Ganur Road Sonipat, Haryana - 131027',
       stateCode: '06',
       gstin: '06ABOCS1545E1ZC',
       pan: '',
       signatoryName: 'Authorised Signatory',
-      logoImagePath: '/assets/ssd_logo.jpg', // Using assets from client spec, wait, spec says DB Seed copies to /uploads
+      logoImagePath: '/assets/ssd_logo.png',
       bankName: 'HDFC Bank',
       bankAccount: '50200104459853',
       ifscCode: 'HDFC0007876'
     }
   });
 
-  const fabLoc1 = await prisma.company.create({
-    data: {
+  const fabLoc1 = await prisma.company.upsert({
+    where: { id: 2 },
+    update: { logoImagePath: '/assets/fab_logo.png' },
+    create: {
       name: 'FAB Aviation (Location 1)',
       address: 'Enter address for FAB Aviation Location 1',
       stateCode: 'XX',
       gstin: 'XXXXXXXXXXXXXX',
       pan: '',
       signatoryName: 'Authorised Signatory',
-      logoImagePath: '/assets/fab_aviation_logo.png',
+      logoImagePath: '/assets/fab_logo.png',
       bankName: '',
       bankAccount: '',
       ifscCode: ''
     }
   });
 
-  const fabLoc2 = await prisma.company.create({
-    data: {
+  const fabLoc2 = await prisma.company.upsert({
+    where: { id: 3 },
+    update: { logoImagePath: '/assets/fab_logo.png' },
+    create: {
       name: 'FAB Aviation (Location 2)',
       address: 'Enter address for FAB Aviation Location 2',
       stateCode: 'XX',
       gstin: 'XXXXXXXXXXXXXX',
       pan: '',
       signatoryName: 'Authorised Signatory',
-      logoImagePath: '/assets/fab_aviation_logo.png',
+      logoImagePath: '/assets/fab_logo.png',
       bankName: '',
       bankAccount: '',
       ifscCode: ''
     }
   });
 
-  const uploadsDir = path.join(__dirname, '..', 'uploads');
+  const uploadsDir = process.env.UPLOAD_DIR || path.join(__dirname, '..', 'uploads');
   if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir);
+    fs.mkdirSync(uploadsDir, { recursive: true });
   }
 
-  // Assets copy omitted, user will have to add images
+  // Copy default logos if they exist in the source
+  const sourceDir = path.join(__dirname, '..', 'uploads'); 
+  const logos = ['ssd_logo.png', 'fab_logo.png'];
+  
+  logos.forEach(logo => {
+    const src = path.join(sourceDir, logo);
+    const dest = path.join(uploadsDir, logo);
+    if (fs.existsSync(src) && !fs.existsSync(dest)) {
+      try {
+        fs.copyFileSync(src, dest);
+        console.log(`Copied default logo: ${logo}`);
+      } catch (err) {
+        console.error(`Failed to copy ${logo}:`, err);
+      }
+    }
+  });
 
   console.log('Seed completed.');
 }

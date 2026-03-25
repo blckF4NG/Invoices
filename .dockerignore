@@ -7,5 +7,5 @@ client/dist
 .env
 server/prisma/dev.db
 server/prisma/dev.db-journal
-server/uploads
-uploads
+# server/uploads - removed to allow default logos in build
+# uploads - removed to allow default logos in build
