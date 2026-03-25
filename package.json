@@ -11,6 +11,6 @@
     "start": "cd server && npx prisma migrate deploy && node index.js"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=22.12.0"
   }
 }
