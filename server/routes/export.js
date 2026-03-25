@@ -101,7 +101,7 @@ router.post('/pdf', async (req, res) => {
     const browser = await puppeteer.launch({ 
       headless: 'new',
       args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
-      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || null,
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || (process.env.NODE_ENV === 'production' ? '/usr/bin/chromium' : null),
       timeout: 30000 // 30s launch timeout
     });
     const page = await browser.newPage();
@@ -129,8 +129,12 @@ router.post('/pdf', async (req, res) => {
     
     res.end(pdfBuffer);
   } catch (error) {
-    console.error('PDF error', error);
-    res.status(500).json({ error: 'Failed to generate PDF' });
+    console.error('PDF Export Detailed Error:', error);
+    res.status(500).json({ 
+      error: 'Failed to generate PDF', 
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
