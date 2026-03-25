@@ -2,10 +2,10 @@
 builder = "nixpacks"
 
 [deploy]
-startCommand = "cd server && npx prisma migrate deploy && node index.js"
+startCommand = "npm start"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 100
+restartPolicyType = "on-failure"
 
 [nixpacks]
-# Install chromium for puppeteer
 plan = { providers = ["node"], packages = ["chromium"] }
