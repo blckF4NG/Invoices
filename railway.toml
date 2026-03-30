@@ -7,4 +7,4 @@ healthcheckPath = "/api/health"
 healthcheckTimeout = 100
 
 [nixpacks]
-plan = { providers = ["node"], packages = ["chromium"] }
+plan = { providers = ["node"], packages = ["chromium", "fontconfig", "freetype", "dejavu_fonts", "liberation_ttf"] }
