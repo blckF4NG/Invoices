@@ -66,12 +66,16 @@ router.post('/pdf', async (req, res) => {
     console.log(`Starting PDF generation for: ${companyName} - ${invoiceNo}`);
     
     // Process logo and signature to Base64
-    const logoBase64 = companyData ? getBase64Image(companyData.logoImagePath) : null;
-    const signatureBase64 = companyData ? getBase64Image(companyData.signatureImagePath) : null;
+    const logoBase64 = companyData && companyData.logoImagePath ? getBase64Image(companyData.logoImagePath) : null;
+    const signatureBase64 = companyData && companyData.signatureImagePath ? getBase64Image(companyData.signatureImagePath) : null;
 
-    // Remove any existing logo/signature images from the HTML content if they point to /uploads/
-    // as they will be broken or redundant in the PDF.
-    const processedHtml = htmlContent.replace(/<img[^>]*src="[^"]*\/uploads\/[^"]*"[^>]*>/g, '');
+    let processedHtml = htmlContent;
+    if (logoBase64 && companyData.logoImagePath) {
+      processedHtml = processedHtml.split(companyData.logoImagePath).join(logoBase64);
+    }
+    if (signatureBase64 && companyData.signatureImagePath) {
+      processedHtml = processedHtml.split(companyData.signatureImagePath).join(signatureBase64);
+    }
 
     // Inject styles and logo if needed
     const fullHtml = `
@@ -81,19 +85,28 @@ router.post('/pdf', async (req, res) => {
         <meta charset="UTF-8">
         <script src="https://cdn.tailwindcss.com"></script>
         <style>
-          body { font-family: 'Arial', sans-serif; -webkit-print-color-adjust: exact; }
-          table { width: 100%; border-collapse: collapse; }
-          td, th { border: 1px solid black; padding: 4px; font-size: 11px; }
-          .no-border { border: none !important; }
-          img { max-width: 100%; height: auto; }
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+          body { 
+            -webkit-print-color-adjust: exact; 
+            print-color-adjust: exact;
+          }
         </style>
+        <script>
+          tailwind.config = {
+            theme: {
+              extend: {
+                fontFamily: {
+                  sans: ['Inter', 'sans-serif'],
+                }
+              }
+            }
+          }
+        </script>
       </head>
-      <body class="p-8">
-        <div id="invoice-logo-container">
-          ${logoBase64 ? `<img src="${logoBase64}" class="h-20 mb-6 object-contain" />` : ''}
+      <body>
+        <div class="bg-white p-4 sm:p-8 md:p-12 text-black text-xs font-sans">
+          ${processedHtml}
         </div>
-        ${processedHtml}
-        ${signatureBase64 ? `<div class="flex justify-end mt-4"><img src="${signatureBase64}" class="h-12 object-contain" /></div>` : ''}
       </body>
       </html>
     `;
