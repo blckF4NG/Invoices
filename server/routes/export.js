@@ -90,6 +90,10 @@ router.post('/pdf', async (req, res) => {
             -webkit-print-color-adjust: exact; 
             print-color-adjust: exact;
           }
+          /* Ensure no awkward breaks if it ever scales */
+          table, tr, td, th, tbody, thead, tfoot {
+            page-break-inside: avoid !important;
+          }
         </style>
         <script>
           tailwind.config = {
@@ -104,7 +108,7 @@ router.post('/pdf', async (req, res) => {
         </script>
       </head>
       <body>
-        <div class="bg-white p-4 sm:p-8 md:p-12 text-black text-xs font-sans">
+        <div class="bg-white p-2 text-black text-[11px] font-sans">
           ${processedHtml}
         </div>
       </body>
@@ -128,8 +132,10 @@ router.post('/pdf', async (req, res) => {
 
     const pdfBuffer = await page.pdf({
       format: 'A4',
-      margin: { top: '15mm', right: '15mm', bottom: '15mm', left: '15mm' },
+      margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' },
       printBackground: true,
+      scale: 0.92,
+      pageRanges: '1',
       timeout: 30000 // 30s pdf timeout
     });
 
